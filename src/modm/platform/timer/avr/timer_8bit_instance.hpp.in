@@ -75,15 +75,16 @@ public:
 		setClockSource(ClockSource::Stopped);
 	}
 
-	class OutputChannelA
+	{% for channel in output_channels %}
+	class OutputChannel{{ channel.id|upper }}
 	{
-		using OutputMode_t = Configuration<TccrA_t, OutputMode, 0b11, 6>;
+		using OutputMode{{ channel.id|upper }}_t = Configuration<TccrA_t, OutputMode, 0b11, {{ channel.output_mode_shift }}>;
 
 		static inline void
 		setOutputMode(OutputMode mode)
 		{
 			TccrA_t tccrA{TCCR{{ id }}A};
-			OutputMode_t::set(tccrA, mode);
+			OutputMode{{ channel.id|upper }}_t::set(tccrA, mode);
 			TCCR{{ id }}A = tccrA.value;
 		}
 
@@ -92,7 +93,7 @@ public:
 		static void
 		connect(OutputMode mode)
 		{
-			static_assert(Signal::Signal == Gpio::Signal::Oca);
+			static_assert(Signal::Signal == Gpio::Signal::Oc{{ channel.id|lower }});
 			using Connector = GpioConnector<Peripheral::Tc{{ id }}, Signal>;
 			Connector::connect();
 
@@ -103,7 +104,7 @@ public:
 		static void
 		disconnect()
 		{
-			static_assert(Signal::Signal == Gpio::Signal::Oca);
+			static_assert(Signal::Signal == Gpio::Signal::Oc{{ channel.id|lower }});
 			using Connector = GpioConnector<Peripheral::Tc{{ id }}, Signal>;
 			Connector::disconnect();
 
@@ -113,9 +114,10 @@ public:
 		static inline void
 		setOutputCompareRegister(CountType value)
 		{
-			OCR{{ id }}A = value;
+			OCR{{ id }}{{ channel.id|upper }} = value;
 		}
 	};
+	{% endfor %}
 };
 
 }  // namespace modm::platform

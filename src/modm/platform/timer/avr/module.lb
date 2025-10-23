@@ -24,7 +24,11 @@ class Instance8Bit(Module):
 		env.outbasepath = "modm/src/modm/platform/timer"
 
 		env.substitutions = {
-			"id" : self.instance
+			"id" : self.instance,
+			"output_channels" : [
+				{ "id" : "A", "output_mode_shift" : 6 },
+				{ "id" : "B", "output_mode_shift" : 4 }
+			]
 		}
 		env.template("timer_8bit_instance.hpp.in", "timer_{}.hpp".format(self.instance))
 
