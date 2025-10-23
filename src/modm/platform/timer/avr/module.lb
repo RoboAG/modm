@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2025, Janek Neugebauer
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+class Instance8Bit(Module):
+	def __init__(self, instance):
+		self.instance = instance
+
+	def init(self, module):
+		module.name = str(self.instance)
+
+	def prepare(self, module, options):
+		return True
+
+	def build(self, env):
+		env.outbasepath = "modm/src/modm/platform/timer"
+
+		env.substitutions = {
+			"id" : self.instance
+		}
+		env.template("timer_8bit_instance.hpp.in", "timer_{}.hpp".format(self.instance))
+
+def init(module):
+	module.name = ":platform:timer"
+	module.description = "AVR Basic Timer/Counters"
+
+def prepare(module, options):
+	device = options[":target"]
+	# limit usage to ATmega328P for now
+	if not device.identifier.string.startswith("atmega328p"):
+		return False
+
+	module.depends(
+		":stdc++",
+		":architecture:register",
+		":platform:gpio")
+
+	timers8bit = device.get_driver("tc:tc8")["instance"]
+	for instance in timers8bit:
+		module.add_submodule(Instance8Bit(instance))
+
+	return True
+
+def build(env):
+	env.outbasepath = "modm/src/modm/platform/timer"
+
+	env.copy("timer_base.hpp")
+	env.copy("timer_8bit.hpp")
+	env.copy("timer_8bit_impl.hpp")
