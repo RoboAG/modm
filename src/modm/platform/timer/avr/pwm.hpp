@@ -20,7 +20,7 @@
 namespace modm::platform
 {
 
-template<class TimerInstance, Timer::PwmMode pwmMode, TimerInstance::Prescaler prescaler,
+template<class TimerInstance, Timer::PwmMode pwmMode, TimerInstance::ClockSource prescaler,
 		 TimerInstance::CountType topValue>
 class FixedFrequencyPwm
 {
@@ -37,7 +37,7 @@ class FixedFrequencyPwm
 public:
 	static constexpr TimerInstance::WaveformGenerationMode selectedWaveformGenerationMode =
 		TimerInstance::template UseWaveformGenerationModes<WgmSelector>::selectMode().value();
-	static constexpr TimerInstance::Prescaler selectedPrescaler = prescaler;
+	static constexpr TimerInstance::ClockSource selectedPrescaler = prescaler;
 	static constexpr TimerInstance::CountType selectedTopValue = topValue;
 
 	static void

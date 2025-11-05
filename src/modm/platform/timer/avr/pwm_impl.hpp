@@ -14,7 +14,7 @@
 namespace modm::platform
 {
 
-template<class TimerInstance, Timer::PwmMode pwmMode, TimerInstance::Prescaler prescaler,
+template<class TimerInstance, Timer::PwmMode pwmMode, TimerInstance::ClockSource prescaler,
 		 TimerInstance::CountType topValue>
 template<TimerInstance::WaveformGenerationMode firstMode,
 		 TimerInstance::WaveformGenerationMode... remainingModes>
@@ -36,7 +36,7 @@ FixedFrequencyPwm<TimerInstance, pwmMode, prescaler,
 	}
 }
 
-template<class TimerInstance, Timer::PwmMode mode, TimerInstance::Prescaler prescaler,
+template<class TimerInstance, Timer::PwmMode mode, TimerInstance::ClockSource prescaler,
 		 TimerInstance::CountType topValue>
 void
 FixedFrequencyPwm<TimerInstance, mode, prescaler, topValue>::initialize()
@@ -59,7 +59,7 @@ FixedFrequencyPwm<TimerInstance, mode, prescaler, topValue>::initialize()
 	}
 }
 
-template<class TimerInstance, Timer::PwmMode mode, TimerInstance::Prescaler prescaler,
+template<class TimerInstance, Timer::PwmMode mode, TimerInstance::ClockSource prescaler,
 		 TimerInstance::CountType topValue>
 template<class OutputChannel>
 template<class Signal>
@@ -71,7 +71,7 @@ FixedFrequencyPwm<TimerInstance, mode, prescaler, topValue>::Output<OutputChanne
 												   : Timer::OutputMode::PwmNormal);
 }
 
-template<class TimerInstance, Timer::PwmMode mode, TimerInstance::Prescaler prescaler,
+template<class TimerInstance, Timer::PwmMode mode, TimerInstance::ClockSource prescaler,
 		 TimerInstance::CountType topValue>
 template<class OutputChannel>
 void
@@ -81,7 +81,7 @@ FixedFrequencyPwm<TimerInstance, mode, prescaler, topValue>::Output<OutputChanne
 	OutputChannel::outputCompareRegister = compareValue;
 }
 
-template<class TimerInstance, Timer::PwmMode mode, TimerInstance::Prescaler prescaler,
+template<class TimerInstance, Timer::PwmMode mode, TimerInstance::ClockSource prescaler,
 		 TimerInstance::CountType topValue>
 template<class OutputChannel>
 void

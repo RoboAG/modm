@@ -36,15 +36,6 @@ struct Timer8Bit : Timer
 		ExternalRising = 7,
 	};
 
-	enum class Prescaler : uint8_t
-	{
-		Div1 = uint8_t(ClockSource::ClkIo),
-		Div8 = uint8_t(ClockSource::ClkIoDiv8),
-		Div64 = uint8_t(ClockSource::ClkIoDiv64),
-		Div256 = uint8_t(ClockSource::ClkIoDiv256),
-		Div1024 = uint8_t(ClockSource::ClkIoDiv1024),
-	};
-
 	enum class WaveformGenerationMode : uint8_t
 	{
 		Normal = 0,

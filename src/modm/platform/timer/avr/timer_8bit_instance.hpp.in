@@ -64,12 +64,6 @@ public:
 	}
 
 	static inline void
-	setClockSource(Prescaler p)
-	{
-		setClockSource(static_cast<ClockSource>(p));
-	}
-
-	static inline void
 	stop()
 	{
 		setClockSource(ClockSource::Stopped);

@@ -46,13 +46,10 @@ struct Timer
 
 	enum class ClockSource;
 
-	enum class Prescaler;
-
 	enum class WaveformGenerationMode;
 
 	static void initialize(WaveformGenerationMode, ClockSource);
 	static void setClockSource(ClockSource);
-	static void setClockSource(Prescaler);
 	static void
 	stop();
 
