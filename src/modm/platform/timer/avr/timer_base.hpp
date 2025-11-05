@@ -65,8 +65,9 @@ struct Timer
 	template<WaveformGenerationMode>
 	struct WaveformGenerationModeTraits
 	{
-		// either a constant value or a reference to the register used for dynamic top values
-		static constexpr CountType top = max;
+		// only one of these
+		static constexpr CountType topValue = max;
+		static volatile CountType& topRegister;
 
 		// if applicable
 		static constexpr PwmMode pwmMode = PwmMode::FastPwm;

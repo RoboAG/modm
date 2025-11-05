@@ -111,13 +111,34 @@ public:
 			setOutputMode(OutputMode::Disconnected);
 		}
 
-		static inline void
-		setOutputCompareRegister(CountType value)
-		{
-			OCR{{ id }}{{ channel.id|upper }} = value;
-		}
+		static inline volatile CountType& outputCompareRegister = OCR{{ id }}{{ channel.id|upper }};
 	};
 	{% endfor %}
+
+	template<Timer8Bit::WaveformGenerationMode mode>
+	struct WaveformGenerationModeTraits : Timer8Bit::WaveformGenerationModeTraits<mode>
+	{};
+};
+
+template<>
+struct Timer{{ id }}::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::Ctc>
+	: Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::Ctc>
+{
+	static inline volatile CountType& topRegister = OCR{{ id }}A;
+};
+
+template<>
+struct Timer{{ id }}::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::PhaseCorrectPwmOcra>
+	: Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::PhaseCorrectPwmOcra>
+{
+	static inline volatile CountType& topRegister = OCR{{ id }}A;
+};
+
+template<>
+struct Timer{{ id }}::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::FastPwmOcra>
+	: Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::FastPwmOcra>
+{
+	static inline volatile CountType& topRegister = OCR{{ id }}A;
 };
 
 }  // namespace modm::platform

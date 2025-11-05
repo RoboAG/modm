@@ -64,6 +64,12 @@ struct Timer8Bit : Timer
 	template<WaveformGenerationMode>
 	struct WaveformGenerationModeTraits;
 
+	template<template<WaveformGenerationMode...> class WgmUser>
+	using UseWaveformGenerationModes =
+		WgmUser<WaveformGenerationMode::Normal, WaveformGenerationMode::PhaseCorrectPwm8Bit,
+				WaveformGenerationMode::Ctc, WaveformGenerationMode::FastPwm8Bit,
+				WaveformGenerationMode::PhaseCorrectPwmOcra, WaveformGenerationMode::FastPwmOcra>;
+
 	struct SingleSlopeModeTraits;
 	struct DualSlopeModeTraits;
 };

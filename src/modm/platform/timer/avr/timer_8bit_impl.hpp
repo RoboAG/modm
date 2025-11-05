@@ -96,14 +96,14 @@ template<>
 struct Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::Normal>
 	: SingleSlopeModeTraits
 {
-	static constexpr CountType top = Timer8Bit::max;
+	static constexpr CountType topValue = Timer8Bit::max;
 };
 
 template<>
 struct Timer8Bit::WaveformGenerationModeTraits<
 	Timer8Bit::WaveformGenerationMode::PhaseCorrectPwm8Bit> : DualSlopeModeTraits
 {
-	static constexpr CountType top = Timer8Bit::max;
+	static constexpr CountType topValue = Timer8Bit::max;
 
 	static constexpr PwmMode pwmMode = PwmMode::PhaseCorrectPwm;
 };
@@ -117,7 +117,7 @@ template<>
 struct Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::FastPwm8Bit>
 	: SingleSlopeModeTraits
 {
-	static constexpr CountType top = Timer8Bit::max;
+	static constexpr CountType topValue = Timer8Bit::max;
 
 	static constexpr PwmMode pwmMode = PwmMode::FastPwm;
 };
@@ -125,11 +125,15 @@ struct Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode
 template<>
 struct Timer8Bit::WaveformGenerationModeTraits<
 	Timer8Bit::WaveformGenerationMode::PhaseCorrectPwmOcra> : DualSlopeModeTraits
-{};
+{
+	static constexpr PwmMode pwmMode = PwmMode::PhaseCorrectPwm;
+};
 
 template<>
 struct Timer8Bit::WaveformGenerationModeTraits<Timer8Bit::WaveformGenerationMode::FastPwmOcra>
 	: SingleSlopeModeTraits
-{};
+{
+	static constexpr PwmMode pwmMode = PwmMode::FastPwm;
+};
 
 }  // namespace modm::platform
