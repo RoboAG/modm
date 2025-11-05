@@ -14,8 +14,6 @@
 
 #include <stdint.h>
 
-#include <chrono>
-
 namespace modm::platform
 {
 
@@ -47,40 +45,10 @@ struct Timer
 	using ExtendedCountType = uint32_t;
 
 	enum class ClockSource;
-	template<ClockSource, class SystemClock>
-	struct ClockSourceTraits
-	{
-		using ClockPeriods =
-			std::chrono::duration<ExtendedCountType, std::ratio<1, SystemClock::Timer>>;
-	};
 
 	enum class Prescaler;
-	template<Prescaler>
-	struct PrescalerTraits
-	{
-		using Ratio = std::ratio<1>;
-	};
 
 	enum class WaveformGenerationMode;
-	template<WaveformGenerationMode>
-	struct WaveformGenerationModeTraits
-	{
-		// only one of these
-		static constexpr CountType topValue = max;
-		static volatile CountType& topRegister;
-
-		// if applicable
-		static constexpr PwmMode pwmMode = PwmMode::FastPwm;
-
-		static constexpr ExtendedCountType
-		countsPerPeriod(CountType topValue);
-		static constexpr CountType
-		computeTopValue(ExtendedCountType countsPerPeriod);
-	};
-
-	// inherited by WaveformGenerationModeTraits specializations
-	struct SingleSlopeModeTraits;
-	struct DoubleSlopeModeTraits;
 
 	static void initialize(WaveformGenerationMode, ClockSource);
 	static void setClockSource(ClockSource);

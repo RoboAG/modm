@@ -36,9 +36,6 @@ struct Timer8Bit : Timer
 		ExternalRising = 7,
 	};
 
-	template<ClockSource, class SystemClock>
-	struct ClockSourceTraits;
-
 	enum class Prescaler : uint8_t
 	{
 		Div1 = uint8_t(ClockSource::ClkIo),
@@ -47,9 +44,6 @@ struct Timer8Bit : Timer
 		Div256 = uint8_t(ClockSource::ClkIoDiv256),
 		Div1024 = uint8_t(ClockSource::ClkIoDiv1024),
 	};
-
-	template<Prescaler>
-	struct PrescalerTraits;
 
 	enum class WaveformGenerationMode : uint8_t
 	{
@@ -60,18 +54,6 @@ struct Timer8Bit : Timer
 		PhaseCorrectPwmOcra = 5,
 		FastPwmOcra = 7,
 	};
-
-	template<WaveformGenerationMode>
-	struct WaveformGenerationModeTraits;
-
-	template<template<WaveformGenerationMode...> class WgmUser>
-	using UseWaveformGenerationModes =
-		WgmUser<WaveformGenerationMode::Normal, WaveformGenerationMode::PhaseCorrectPwm8Bit,
-				WaveformGenerationMode::Ctc, WaveformGenerationMode::FastPwm8Bit,
-				WaveformGenerationMode::PhaseCorrectPwmOcra, WaveformGenerationMode::FastPwmOcra>;
-
-	struct SingleSlopeModeTraits;
-	struct DualSlopeModeTraits;
 };
 
 }  // namespace modm::platform
