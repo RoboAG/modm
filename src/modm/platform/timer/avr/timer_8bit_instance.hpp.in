@@ -18,6 +18,7 @@
 
 #include <modm/architecture/interface/register.hpp>
 #include <modm/math/utils/bit_constants.hpp>
+#include <modm/math/units.hpp>
 #include <modm/platform/gpio/base.hpp>
 #include <modm/platform/gpio/connector.hpp>
 
@@ -105,9 +106,66 @@ public:
 			setOutputMode(OutputMode::Disconnected);
 		}
 
-		static inline volatile CountType& outputCompareRegister = OCR{{ id }}{{ channel.id|upper }};
+		static inline void
+		setCompareRegister(CountType compareValue)
+		{
+			OCR{{ id }}{{ channel.id|upper }} = compareValue;
+		}
 	};
 	{% endfor %}
+
+	template<PwmMode pwmMode, ClockSource prescaler, CountType topValue>
+	class FixedFrequencyPwm
+	{
+	public:
+		static inline void
+		initialize()
+		{
+			constexpr WaveformGenerationMode mode = []{
+				if constexpr (pwmMode == PwmMode::FastPwm) {
+					return topValue == 0xff ? WaveformGenerationMode::FastPwm8Bit : WaveformGenerationMode::FastPwmOcra;
+				} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm) {
+					return topValue == 0xff ? WaveformGenerationMode::PhaseCorrectPwm8Bit : WaveformGenerationMode::PhaseCorrectPwmOcra;
+				} else {
+					static_assert(false, "unsupported PwmMode");
+				}
+			}();
+
+			Timer{{ id }}::initialize(mode, prescaler);
+
+			if constexpr (mode == WaveformGenerationMode::FastPwmOcra || mode == WaveformGenerationMode::PhaseCorrectPwmOcra) {
+				OCR{{ id }}A = topValue;
+			}
+		}
+
+		{% for channel in output_channels %}
+		class Channel{{ channel.id|upper }} : private OutputChannel{{ channel.id|upper }}
+		{
+		public:
+			template<class Signal>
+			static void
+			connect(bool invert = false)
+			{
+				OutputChannel{{ channel.id|upper }}::connect<Signal>(invert ? OutputMode::PwmInverted : OutputMode::PwmNormal);
+			}
+
+			using OutputChannel{{ channel.id|upper }}::disconnect;
+
+			static inline void
+			setDutyCycle(percent_t dutyCycle)
+			{
+				setCompareRegister(static_cast<CountType>(dutyCycle * static_cast<float>(topValue)));
+			}
+
+			static inline void
+			setDutyCycle(uint8_t dutyCycleFraction)
+			{
+				uint8_t compareValue = uint8_t(((uint16_t(topValue) + 1) * uint16_t(dutyCycleFraction)) >> 8);
+				setCompareRegister(compareValue);
+			}
+		};
+		{% endfor %}
+	};
 };
 
 }  // namespace modm::platform
