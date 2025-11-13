@@ -46,7 +46,8 @@ def prepare(module, options):
 		":stdc++",
 		":math:units",
 		":architecture:register",
-		":platform:gpio")
+		":platform:gpio",
+		":platform:clock")
 
 	timers8bit = device.get_driver("tc:tc8")["instance"]
 	for instance in timers8bit:

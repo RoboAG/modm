@@ -45,6 +45,39 @@ struct Timer8Bit : Timer
 		PhaseCorrectPwmOcra = 5,
 		FastPwmOcra = 7,
 	};
+
+	static constexpr ClockCycles<SystemClock::Timer>
+	clockSourcePeriod(ClockSource clock)
+	{
+		switch (clock)
+		{
+			case ClockSource::ClkIo:
+				return ClockCycles<SystemClock::Timer>{1};
+			case ClockSource::ClkIoDiv8:
+				return ClockCycles<SystemClock::Timer>{8};
+			case ClockSource::ClkIoDiv64:
+				return ClockCycles<SystemClock::Timer>{64};
+			case ClockSource::ClkIoDiv256:
+				return ClockCycles<SystemClock::Timer>{256};
+			case ClockSource::ClkIoDiv1024:
+				return ClockCycles<SystemClock::Timer>{1024};
+			default:
+				return ClockCycles<SystemClock::Timer>{0};
+		}
+	}
+
+	static constexpr ClockSource
+	selectPrescaler(ClockCycles<SystemClock::Timer> minPeriod)
+	{
+		constexpr ClockSource prescalerOptions[] = {
+			ClockSource::ClkIo, ClockSource::ClkIoDiv8, ClockSource::ClkIoDiv64,
+			ClockSource::ClkIoDiv256, ClockSource::ClkIoDiv1024};
+		for (ClockSource prescaler : prescalerOptions)
+		{
+			if (minPeriod <= clockSourcePeriod(prescaler)) return prescaler;
+		}
+		return ClockSource::Stopped;
+	}
 };
 
 }  // namespace modm::platform

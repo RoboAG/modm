@@ -16,12 +16,14 @@
 
 #include <avr/io.h>
 #include <type_traits>
+#include <chrono>
 
 #include <modm/architecture/interface/register.hpp>
 #include <modm/math/utils/bit_constants.hpp>
 #include <modm/math/units.hpp>
 #include <modm/platform/gpio/base.hpp>
 #include <modm/platform/gpio/connector.hpp>
+#include <modm/platform/clock/clock.hpp>
 
 namespace modm::platform
 {
@@ -116,7 +118,7 @@ public:
 	{% endfor %}
 
 	template<PwmMode pwmMode, ClockSource prescaler, CountType topValue>
-	class FixedFrequencyPwm
+	class FixedTopPwm
 	{
 		static constexpr WaveformGenerationMode wgMode = []{
 			if constexpr (pwmMode == PwmMode::FastPwm) {
@@ -175,6 +177,44 @@ public:
 		using Channel{{ channel.id|upper }} = Channel<OutputChannel{{ channel.id|upper }}>;
 		{% endfor %}
 	};
+
+private:
+	template<PwmMode pwmMode, CtpDurationWrapper periodWrapped>
+	class FixedPeriodPwmHelper
+	{
+		static constexpr ClockCycles<SystemClock::Timer> period = std::chrono::round<ClockCycles<SystemClock::Timer>>(periodWrapped.unwrap());
+
+		static constexpr uint16_t maxCountsPerPeriod = []{
+			if constexpr (pwmMode == PwmMode::FastPwm) {
+				return uint16_t(max) + 1;
+			} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm) {
+				return uint16_t(max) * 2;
+			} else {
+				static_assert(false, "unsupported PwmMode");
+			}
+		}();
+
+		static constexpr ClockSource prescaler = selectPrescaler(period / maxCountsPerPeriod);
+
+		static constexpr uint16_t countsPerPeriod = period / clockSourcePeriod(prescaler);
+
+		static constexpr uint8_t topValue = []{
+			if constexpr (pwmMode == PwmMode::FastPwm) {
+				return uint8_t(countsPerPeriod - 1);
+			} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm) {
+				return uint8_t(countsPerPeriod / 2);
+			} else {
+				static_assert(false, "unsupported PwmMode");
+			}
+		}();
+
+	public:
+		using Impl = FixedTopPwm<pwmMode, prescaler, topValue>;
+	};
+
+public:
+	template<PwmMode pwmMode, CtpDurationWrapper period>
+	using FixedPeriodPwm = FixedPeriodPwmHelper<pwmMode, period>::Impl;
 };
 
 }  // namespace modm::platform

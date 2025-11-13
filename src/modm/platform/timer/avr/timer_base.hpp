@@ -14,6 +14,10 @@
 
 #include <stdint.h>
 
+#include <chrono>
+#include <modm/math/units.hpp>
+#include <modm/platform/clock/clock.hpp>
+
 namespace modm::platform
 {
 
@@ -66,6 +70,31 @@ struct Timer
 		static void setOutputCompareRegister(CountType);
 	};
 #endif  // __DOXYGEN__
+};
+
+template<frequency_t frequency = SystemClock::Frequency>
+using ClockCycles = std::chrono::duration<int32_t, std::ratio<1, frequency>>;
+
+template<class Duration>
+struct CtpDurationWrapper
+{
+	using DurationType = Duration;
+
+	DurationType::rep count;
+
+	constexpr CtpDurationWrapper(DurationType duration) : count{duration.count()} {}
+
+	constexpr DurationType
+	unwrap() const
+	{
+		return DurationType{count};
+	}
+
+	constexpr
+	operator DurationType() const
+	{
+		return unwrap();
+	}
 };
 
 }  // namespace modm::platform
