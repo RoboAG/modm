@@ -67,14 +67,14 @@ struct Timer8Bit : Timer
 	}
 
 	static constexpr ClockSource
-	selectPrescaler(ClockCycles<SystemClock::Timer> minPeriod)
+	selectPrescaler(ClockCycles<SystemClock::Timer> minTickPeriod)
 	{
 		constexpr ClockSource prescalerOptions[] = {
 			ClockSource::ClkIo, ClockSource::ClkIoDiv8, ClockSource::ClkIoDiv64,
 			ClockSource::ClkIoDiv256, ClockSource::ClkIoDiv1024};
 		for (ClockSource prescaler : prescalerOptions)
 		{
-			if (minPeriod <= clockSourcePeriod(prescaler)) return prescaler;
+			if (minTickPeriod <= clockSourcePeriod(prescaler)) return prescaler;
 		}
 		return ClockSource::Stopped;
 	}

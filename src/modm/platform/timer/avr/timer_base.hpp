@@ -14,9 +14,9 @@
 
 #include <stdint.h>
 
-#include <chrono>
-#include <modm/math/units.hpp>
 #include <modm/platform/clock/clock.hpp>
+
+#include "chrono_utils.hpp"
 
 namespace modm::platform
 {
@@ -70,31 +70,63 @@ struct Timer
 		static void setOutputCompareRegister(CountType);
 	};
 #endif  // __DOXYGEN__
-};
 
-template<frequency_t frequency = SystemClock::Frequency>
-using ClockCycles = std::chrono::duration<int32_t, std::ratio<1, frequency>>;
-
-template<class Duration>
-struct CtpDurationWrapper
-{
-	using DurationType = Duration;
-
-	DurationType::rep count;
-
-	constexpr CtpDurationWrapper(DurationType duration) : count{duration.count()} {}
-
-	constexpr DurationType
-	unwrap() const
+protected:
+	template<PwmMode pwmMode, typename WideCountType, typename CountType>
+	static constexpr WideCountType
+	topToCounts(CountType topValue)
 	{
-		return DurationType{count};
+		if constexpr (pwmMode == PwmMode::FastPwm)
+		{
+			return WideCountType(topValue) + 1;
+		} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm ||
+							 pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm)
+		{
+			return WideCountType(topValue) * 2;
+		} else
+		{
+			static_assert(false, "unknown PwmMode");
+		}
 	}
 
-	constexpr
-	operator DurationType() const
+	template<PwmMode pwmMode, typename CountType, typename WideCountType>
+	static constexpr CountType
+	countsToTop(WideCountType countsPerPeriod)
 	{
-		return unwrap();
+		if constexpr (pwmMode == PwmMode::FastPwm)
+		{
+			return CountType(countsPerPeriod - 1);
+		} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm ||
+							 pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm)
+		{
+			return CountType(countsPerPeriod / 2);
+		} else
+		{
+			static_assert(false, "unknown PwmMode");
+		}
 	}
+
+	template<class Timer, PwmMode pwmMode, CtpDurationWrapper periodWrapped>
+	class FixedPeriodPwmHelper
+	{
+		static constexpr ClockCycles<SystemClock::Timer> period =
+			std::chrono::round<ClockCycles<SystemClock::Timer>>(periodWrapped.unwrap());
+
+		static constexpr ClockCycles<SystemClock::Timer>::rep maxCountsPerPeriod =
+			topToCounts<pwmMode, ClockCycles<SystemClock::Timer>::rep>(Timer::max);
+
+		static constexpr Timer::ClockSource prescaler =
+			Timer::selectPrescaler(period / maxCountsPerPeriod);
+
+		static constexpr ClockCycles<SystemClock::Timer>::rep countsPerPeriod =
+			period / Timer::clockSourcePeriod(prescaler);
+
+		static constexpr Timer::CountType topValue =
+			countsToTop<pwmMode, typename Timer::CountType>(countsPerPeriod);
+
+	public:
+		using Impl = Timer::template FixedTopPwm<pwmMode, prescaler, topValue>;
+	};
 };
 
 }  // namespace modm::platform

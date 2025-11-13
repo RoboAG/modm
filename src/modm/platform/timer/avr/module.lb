@@ -58,6 +58,7 @@ def prepare(module, options):
 def build(env):
 	env.outbasepath = "modm/src/modm/platform/timer"
 
+	env.copy("chrono_utils.hpp")
 	env.copy("timer_base.hpp")
 	env.copy("timer_8bit.hpp")
 	env.copy("timer_8bit_impl.hpp")
