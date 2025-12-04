@@ -72,63 +72,46 @@ struct Timer
 #endif  // __DOXYGEN__
 
 protected:
-	template<PwmMode pwmMode, typename WideCountType, typename CountType>
-	static constexpr WideCountType
-	topToCounts(CountType topValue)
+	template<bool dualSlope>
+	static constexpr auto
+	topToCounts(auto topValue)
 	{
-		if constexpr (pwmMode == PwmMode::FastPwm)
+		if constexpr (dualSlope)
 		{
-			return WideCountType(topValue) + 1;
-		} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm ||
-							 pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm)
-		{
-			return WideCountType(topValue) * 2;
+			return topValue * 2;
 		} else
 		{
-			static_assert(false, "unknown PwmMode");
+			return topValue + 1;
 		}
 	}
 
-	template<PwmMode pwmMode, typename CountType, typename WideCountType>
-	static constexpr CountType
-	countsToTop(WideCountType countsPerPeriod)
+	template<bool dualSlope>
+	static constexpr auto
+	countsToTop(auto countsPerPeriod)
 	{
-		if constexpr (pwmMode == PwmMode::FastPwm)
+		if constexpr (dualSlope)
 		{
-			return CountType(countsPerPeriod - 1);
-		} else if constexpr (pwmMode == PwmMode::PhaseCorrectPwm ||
-							 pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm)
-		{
-			return CountType(countsPerPeriod / 2);
+			return countsPerPeriod / 2;
 		} else
 		{
-			static_assert(false, "unknown PwmMode");
+			return countsPerPeriod - 1;
 		}
 	}
 
 	template<class Timer, PwmMode pwmMode, CtpDurationWrapper periodWrapped>
 	class FixedPeriodPwmHelper
 	{
+		static constexpr bool dualSlope =
+			pwmMode == PwmMode::PhaseCorrectPwm || pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm;
+
 		static constexpr ClockCycles<SystemClock::Timer> period =
 			std::chrono::round<ClockCycles<SystemClock::Timer>>(periodWrapped.unwrap());
 
-		static constexpr ClockCycles<SystemClock::Timer>::rep maxCountsPerPeriod =
-			topToCounts<pwmMode, ClockCycles<SystemClock::Timer>::rep>(Timer::max);
-
 		static constexpr Timer::ClockSource prescaler =
-			Timer::selectPrescaler(period / maxCountsPerPeriod);
-
-		static constexpr ClockCycles<SystemClock::Timer> clockSourcePeriod =
-			Timer::clockSourcePeriod(prescaler);
-
-		static_assert(clockSourcePeriod.count() > 0,
-					  "requested frequency too low / period too long");
-
-		static constexpr ClockCycles<SystemClock::Timer>::rep countsPerPeriod =
-			period / clockSourcePeriod;
+			Timer::template selectPrescalerForMaxResolution<dualSlope>(period);
 
 		static constexpr Timer::CountType topValue =
-			countsToTop<pwmMode, typename Timer::CountType>(countsPerPeriod);
+			Timer::template computeTopValue<dualSlope>(prescaler, period);
 
 	public:
 		using Impl = Timer::template FixedTopPwm<pwmMode, prescaler, topValue>;

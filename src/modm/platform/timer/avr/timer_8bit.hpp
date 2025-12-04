@@ -67,7 +67,7 @@ struct Timer8Bit : Timer
 	}
 
 	static constexpr ClockSource
-	selectPrescaler(ClockCycles<SystemClock::Timer> minTickPeriod)
+	getPrescaler(ClockCycles<SystemClock::Timer> minTickPeriod)
 	{
 		constexpr ClockSource prescalerOptions[] = {
 			ClockSource::ClkIo, ClockSource::ClkIoDiv8, ClockSource::ClkIoDiv64,
@@ -77,6 +77,27 @@ struct Timer8Bit : Timer
 			if (minTickPeriod <= clockSourcePeriod(prescaler)) return prescaler;
 		}
 		return ClockSource::Stopped;
+	}
+
+	template<bool dualSlope>
+	static constexpr ClockSource
+	selectPrescalerForMaxResolution(ClockCycles<SystemClock::Timer> period)
+	{
+		constexpr ClockCycles<SystemClock::Timer>::rep maxCountsPerPeriod =
+			topToCounts<dualSlope>(ClockCycles<SystemClock::Timer>::rep(Timer8Bit::max));
+
+		return getPrescaler(period / maxCountsPerPeriod);
+	}
+
+	template<bool dualSlope>
+	static constexpr CountType
+	computeTopValue(ClockSource prescaler, ClockCycles<SystemClock::Timer> period)
+	{
+		ClockCycles<SystemClock::Timer> tickPeriod = clockSourcePeriod(prescaler);
+
+		ClockCycles<SystemClock::Timer>::rep countsPerPeriod = period / tickPeriod;
+
+		return CountType(countsToTop<dualSlope>(countsPerPeriod));
 	}
 };
 
