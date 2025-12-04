@@ -180,6 +180,9 @@ public:
 
 	template<PwmMode pwmMode, CtpDurationWrapper period>
 	using FixedPeriodPwm = FixedPeriodPwmHelper<Timer{{ id }}, pwmMode, period>::Impl;
+
+	template<PwmMode pwmMode, frequency_t frequency>
+	using FixedFrequencyPwm = FixedPeriodPwm<pwmMode, ClockCycles<SystemClock::Timer>{std::chrono::seconds{1}} / frequency>;
 };
 
 }  // namespace modm::platform

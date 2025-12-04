@@ -118,8 +118,14 @@ protected:
 		static constexpr Timer::ClockSource prescaler =
 			Timer::selectPrescaler(period / maxCountsPerPeriod);
 
+		static constexpr ClockCycles<SystemClock::Timer> clockSourcePeriod =
+			Timer::clockSourcePeriod(prescaler);
+
+		static_assert(clockSourcePeriod.count() > 0,
+					  "requested frequency too low / period too long");
+
 		static constexpr ClockCycles<SystemClock::Timer>::rep countsPerPeriod =
-			period / Timer::clockSourcePeriod(prescaler);
+			period / clockSourcePeriod;
 
 		static constexpr Timer::CountType topValue =
 			countsToTop<pwmMode, typename Timer::CountType>(countsPerPeriod);
