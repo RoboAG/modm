@@ -98,11 +98,17 @@ protected:
 		}
 	}
 
+	static constexpr bool
+	isDualSlope(PwmMode pwmMode)
+	{
+		return pwmMode == PwmMode::PhaseCorrectPwm ||
+			   pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm;
+	}
+
 	template<class Timer, PwmMode pwmMode, CtpDurationWrapper periodWrapped>
 	class FixedPeriodPwmHelper
 	{
-		static constexpr bool dualSlope =
-			pwmMode == PwmMode::PhaseCorrectPwm || pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm;
+		static constexpr bool dualSlope = isDualSlope(pwmMode);
 
 		static constexpr ClockCycles<SystemClock::Timer> period =
 			std::chrono::round<ClockCycles<SystemClock::Timer>>(periodWrapped.unwrap());
