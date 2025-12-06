@@ -15,13 +15,9 @@
 #include "timer_8bit.hpp"
 
 #include <avr/io.h>
-#include <type_traits>
-#include <chrono>
 
-#include <modm/math/units.hpp>
 #include <modm/platform/gpio/base.hpp>
 #include <modm/platform/gpio/connector.hpp>
-#include <modm/platform/clock/clock.hpp>
 
 namespace modm::platform
 {
@@ -91,11 +87,7 @@ public:
 			setOutputMode(OutputMode::Disconnected);
 		}
 
-		static inline void
-		setCompareRegister(CountType compareValue)
-		{
-			OCR{{ id }}{{ channel.id|upper }} = compareValue;
-		}
+		static inline volatile CountType& compareRegister = OCR{{ id }}{{ channel.id|upper }};
 	};
 	{% endfor %}
 };

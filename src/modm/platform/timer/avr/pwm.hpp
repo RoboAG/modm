@@ -12,6 +12,13 @@
 #ifndef MODM_AVR_TIMER_PWM_HPP
 #define MODM_AVR_TIMER_PWM_HPP
 
+#include <chrono>
+#include <cstdint>
+#include <modm/math/units.hpp>
+#include <modm/math/utils/arithmetic_traits.hpp>
+#include <modm/platform/clock/clock.hpp>
+#include <utility>
+
 #include "timer_base.hpp"
 
 namespace modm::platform
@@ -21,24 +28,52 @@ template<class TimerInstance, Timer::PwmMode pwmMode, TimerInstance::ClockSource
 		 TimerInstance::CountType topValue>
 class FixedTopPwm
 {
-	static constexpr TimerInstance::WaveformGenerationMode wgMode = [] {
+
+	static consteval std::pair<typename TimerInstance::WaveformGenerationMode, bool>
+	selectWgMode()
+	{
 		if constexpr (pwmMode == Timer::PwmMode::FastPwm)
 		{
-			return topValue == 0xff ? TimerInstance::WaveformGenerationMode::FastPwm8Bit
-									: TimerInstance::WaveformGenerationMode::FastPwmOcra;
+			if constexpr (topValue == 0xff &&
+						  requires { TimerInstance::WaveformGenerationMode::FastPwm8Bit; })
+				return {TimerInstance::WaveformGenerationMode::FastPwm8Bit, false};
+			else if constexpr (requires { TimerInstance::WaveformGenerationMode::FastPwmOcra; })
+				return {TimerInstance::WaveformGenerationMode::FastPwmOcra, true};
+			else
+				static_assert(false, "Fast PWM is unsupported by the chosen timer");
 		} else if constexpr (pwmMode == Timer::PwmMode::PhaseCorrectPwm)
 		{
-			return topValue == 0xff ? TimerInstance::WaveformGenerationMode::PhaseCorrectPwm8Bit
-									: TimerInstance::WaveformGenerationMode::PhaseCorrectPwmOcra;
-		} else
+			if constexpr (topValue == 0xff &&
+						  requires { TimerInstance::WaveformGenerationMode::PhaseCorrectPwm8Bit; })
+				return {TimerInstance::WaveformGenerationMode::PhaseCorrectPwm8Bit, false};
+			else if constexpr (requires {
+								   TimerInstance::WaveformGenerationMode::PhaseCorrectPwmOcra;
+							   })
+				return {TimerInstance::WaveformGenerationMode::PhaseCorrectPwmOcra, true};
+			else
+				static_assert(false, "Phase Correct PWM is unsupported by the chosen timer");
+		} else if constexpr (pwmMode == Timer::PwmMode::PhaseAndFrequencyCorrectPwm)
 		{
-			static_assert(false, "unsupported PwmMode");
+			if constexpr (topValue == 0xff && requires {
+							  TimerInstance::WaveformGenerationMode::
+								  PhaseAndFrequencyCorrectPwm8Bit;
+						  })
+				return {TimerInstance::WaveformGenerationMode::PhaseAndFrequencyCorrectPwm8Bit,
+						false};
+			else if constexpr (requires {
+								   TimerInstance::WaveformGenerationMode::
+									   PhaseAndFrequencyCorrectPwmOcra;
+							   })
+				return {TimerInstance::WaveformGenerationMode::PhaseAndFrequencyCorrectPwmOcra,
+						true};
+			else
+				static_assert(false, "Phase Correct PWM is unsupported by the chosen timer");
 		}
-	}();
+	}
 
-	static constexpr bool ocraAsTop =
-		wgMode == TimerInstance::WaveformGenerationMode::FastPwmOcra ||
-		wgMode == TimerInstance::WaveformGenerationMode::PhaseCorrectPwmOcra;
+	static constexpr TimerInstance::WaveformGenerationMode wgMode = selectWgMode().first;
+
+	static constexpr bool ocraAsTop = selectWgMode().second;
 
 public:
 	static void
@@ -46,7 +81,7 @@ public:
 	{
 		TimerInstance::initialize(wgMode, prescaler);
 
-		if constexpr (ocraAsTop) { TimerInstance::OutputChannelA::setCompareRegister(topValue); }
+		if constexpr (ocraAsTop) { TimerInstance::OutputChannelA::compareRegister = topValue; }
 	}
 
 public:
@@ -71,16 +106,17 @@ public:
 		static void
 		setDutyCycle(percent_t dutyCycle)
 		{
-			OutputChannel::setCompareRegister(
-				static_cast<TimerInstance::CountType>(dutyCycle * static_cast<float>(topValue)));
+			OutputChannel::compareRegister =
+				static_cast<TimerInstance::CountType>(dutyCycle * static_cast<float>(topValue));
 		}
 
 		static void
-		setDutyCycle(uint8_t dutyCycleFraction)
+		setDutyCycle(TimerInstance::CountType dutyCycleFraction)
 		{
-			uint8_t compareValue =
-				uint8_t(((uint16_t(topValue) + 1) * uint16_t(dutyCycleFraction)) >> 8);
-			OutputChannel::setCompareRegister(compareValue);
+			using WideCountType = modm::WideType<typename TimerInstance::CountType>;
+			typename TimerInstance::CountType compareValue = static_cast<TimerInstance::CountType>(
+				((WideCountType(topValue) + 1) * WideCountType(dutyCycleFraction)) >> 8);
+			OutputChannel::compareRegister = compareValue;
 		}
 	};
 };
@@ -114,18 +150,29 @@ using FixedFrequencyPwm =
 template<class TimerInstance, Timer::PwmMode pwmMode, class... UsedOutputChannels>
 class VariableFrequencyPwm
 {
-	static constexpr TimerInstance::WaveformGenerationMode wgMode = [] {
-		if constexpr (pwmMode == Timer::PwmMode::FastPwm)
+	static consteval TimerInstance::WaveformGenerationMode
+	selectWgMode()
+	{
+		if constexpr (pwmMode == Timer::PwmMode::FastPwm &&
+					  requires { TimerInstance::WaveformGenerationMode::FastPwmOcra; })
 		{
 			return TimerInstance::WaveformGenerationMode::FastPwmOcra;
-		} else if constexpr (pwmMode == Timer::PwmMode::PhaseCorrectPwm)
+		} else if constexpr (pwmMode == Timer::PwmMode::PhaseCorrectPwm && requires {
+								 TimerInstance::WaveformGenerationMode::PhaseCorrectPwmOcra;
+							 })
 		{
 			return TimerInstance::WaveformGenerationMode::PhaseCorrectPwmOcra;
-		} else
+		} else if constexpr (pwmMode == Timer::PwmMode::PhaseAndFrequencyCorrectPwm && requires {
+								 TimerInstance::WaveformGenerationMode::
+									 PhaseAndFrequencyCorrectPwmOcra;
+							 })
 		{
-			static_assert(false, "unsupported PwmMode");
-		}
-	}();
+			return TimerInstance::WaveformGenerationMode::PhaseAndFrequencyCorrectPwmOcra;
+		} else
+			static_assert(false, "The PWM mode is unsupported by the chosen timer");
+	}
+
+	static constexpr TimerInstance::WaveformGenerationMode wgMode = selectWgMode();
 
 public:
 	template<class OutputChannel>
@@ -134,14 +181,15 @@ public:
 		static_assert(!(std::is_same_v<OutputChannel, typename TimerInstance::OutputChannelA>),
 					  "OCRA already used to define TOP");
 
-		inline static uint8_t dutyCycleFraction = 0;
+		inline static TimerInstance::CountType dutyCycleFraction = 0;
 
 		static void
-		updateTopValue(uint8_t newTop)
+		updateTopValue(TimerInstance::CountType newTop)
 		{
-			uint8_t compareValue =
-				uint8_t(((uint16_t(newTop) + 1) * uint16_t(dutyCycleFraction)) >> 8);
-			OutputChannel::setCompareRegister(compareValue);
+			using WideCountType = modm::WideType<typename TimerInstance::CountType>;
+			typename TimerInstance::CountType compareValue = static_cast<TimerInstance::CountType>(
+				((WideCountType(newTop) + 1) * WideCountType(dutyCycleFraction)) >> 8);
+			OutputChannel::compareRegister = compareValue;
 		}
 
 		friend VariableFrequencyPwm;
@@ -160,18 +208,20 @@ public:
 		static void
 		setDutyCycle(percent_t dutyCycle)
 		{
-			setDutyCycle(uint8_t(dutyCycle * 255.f));
+			setDutyCycle(static_cast<TimerInstance::CountType>(dutyCycle * 255.f));
 		}
 
 		static void
-		setDutyCycle(uint8_t dutyCycleFraction)
+		setDutyCycle(TimerInstance::CountType dutyCycleFraction)
 		{
 			Channel::dutyCycleFraction = dutyCycleFraction;
-			uint8_t compareValue =
-				uint8_t(((uint16_t(OCR0A /* TODO implement generic read access */) + 1) *
-						 uint16_t(dutyCycleFraction)) >>
-						8);
-			OutputChannel::setCompareRegister(compareValue);
+			typename TimerInstance::CountType compareValue =
+				TimerInstance::OutputChannelA::compareRegister;
+
+			using WideCountType = modm::WideType<typename TimerInstance::CountType>;
+			compareValue = static_cast<TimerInstance::CountType>(
+				((WideCountType(compareValue) + 1) * WideCountType(dutyCycleFraction)) >> 8);
+			OutputChannel::compareRegister = compareValue;
 		}
 	};
 
@@ -191,7 +241,7 @@ public:
 			TimerInstance::template computeTopValue<Timer::isDualSlope(pwmMode)>(prescaler, period);
 
 		TimerInstance::setClockSource(prescaler);
-		TimerInstance::OutputChannelA::setCompareRegister(topValue);
+		TimerInstance::OutputChannelA::compareRegister = topValue;
 
 		(Channel<UsedOutputChannels>::updateTopValue(topValue), ...);
 	}
