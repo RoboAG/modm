@@ -71,7 +71,6 @@ struct Timer
 	};
 #endif  // __DOXYGEN__
 
-protected:
 	template<bool dualSlope>
 	static constexpr auto
 	topToCounts(auto topValue)
@@ -104,24 +103,6 @@ protected:
 		return pwmMode == PwmMode::PhaseCorrectPwm ||
 			   pwmMode == PwmMode::PhaseAndFrequencyCorrectPwm;
 	}
-
-	template<class Timer, PwmMode pwmMode, CtpDurationWrapper periodWrapped>
-	class FixedPeriodPwmHelper
-	{
-		static constexpr bool dualSlope = isDualSlope(pwmMode);
-
-		static constexpr ClockCycles<SystemClock::Timer> period =
-			std::chrono::round<ClockCycles<SystemClock::Timer>>(periodWrapped.unwrap());
-
-		static constexpr Timer::ClockSource prescaler =
-			Timer::template selectPrescalerForMaxResolution<dualSlope>(period);
-
-		static constexpr Timer::CountType topValue =
-			Timer::template computeTopValue<dualSlope>(prescaler, period);
-
-	public:
-		using Impl = Timer::template FixedTopPwm<pwmMode, prescaler, topValue>;
-	};
 };
 
 }  // namespace modm::platform

@@ -62,3 +62,4 @@ def build(env):
 	env.copy("timer_base.hpp")
 	env.copy("timer_8bit.hpp")
 	env.copy("timer_8bit_impl.hpp")
+	env.copy("pwm.hpp")
