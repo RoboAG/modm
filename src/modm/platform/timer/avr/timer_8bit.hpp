@@ -12,6 +12,9 @@
 #ifndef MODM_AVR_TIMER_8BIT_HPP
 #define MODM_AVR_TIMER_8BIT_HPP
 
+#include <modm/architecture/interface/register.hpp>
+#include <modm/math/utils/bit_constants.hpp>
+
 #include "timer_base.hpp"
 
 namespace modm::platform
@@ -21,8 +24,6 @@ struct Timer8Bit : Timer
 {
 	using CountType = uint8_t;
 	static constexpr CountType max = 0xff;
-
-	using ExtendedCountType = uint32_t;
 
 	enum class ClockSource : uint8_t
 	{
@@ -47,58 +48,38 @@ struct Timer8Bit : Timer
 	};
 
 	static constexpr ClockCycles<SystemClock::Timer>
-	clockSourcePeriod(ClockSource clock)
-	{
-		switch (clock)
-		{
-			case ClockSource::ClkIo:
-				return ClockCycles<SystemClock::Timer>{1};
-			case ClockSource::ClkIoDiv8:
-				return ClockCycles<SystemClock::Timer>{8};
-			case ClockSource::ClkIoDiv64:
-				return ClockCycles<SystemClock::Timer>{64};
-			case ClockSource::ClkIoDiv256:
-				return ClockCycles<SystemClock::Timer>{256};
-			case ClockSource::ClkIoDiv1024:
-				return ClockCycles<SystemClock::Timer>{1024};
-			default:
-				return ClockCycles<SystemClock::Timer>{0};
-		}
-	}
+	clockSourcePeriod(ClockSource clock);
 
 	static constexpr ClockSource
-	getPrescaler(ClockCycles<SystemClock::Timer> minTickPeriod)
-	{
-		constexpr ClockSource prescalerOptions[] = {
-			ClockSource::ClkIo, ClockSource::ClkIoDiv8, ClockSource::ClkIoDiv64,
-			ClockSource::ClkIoDiv256, ClockSource::ClkIoDiv1024};
-		for (ClockSource prescaler : prescalerOptions)
-		{
-			if (minTickPeriod <= clockSourcePeriod(prescaler)) return prescaler;
-		}
-		return ClockSource::Stopped;
-	}
+	getPrescaler(ClockCycles<SystemClock::Timer> minTickPeriod);
 
 	template<bool dualSlope>
 	static constexpr ClockSource
-	selectPrescalerForMaxResolution(ClockCycles<SystemClock::Timer> period)
-	{
-		constexpr ClockCycles<SystemClock::Timer>::rep maxCountsPerPeriod =
-			topToCounts<dualSlope>(ClockCycles<SystemClock::Timer>::rep(Timer8Bit::max));
-
-		return getPrescaler(period / maxCountsPerPeriod);
-	}
+	selectPrescalerForMaxResolution(ClockCycles<SystemClock::Timer> period);
 
 	template<bool dualSlope>
 	static constexpr CountType
-	computeTopValue(ClockSource prescaler, ClockCycles<SystemClock::Timer> period)
+	computeTopValue(ClockSource prescaler, ClockCycles<SystemClock::Timer> period);
+
+	template<bool dualSlope>
+	static constexpr ClockCycles<SystemClock::Timer>
+	computePeriod(ClockSource prescaler, CountType topValue);
+
+protected:
+	enum class TccrA : uint8_t
 	{
-		ClockCycles<SystemClock::Timer> tickPeriod = clockSourcePeriod(prescaler);
+	};
+	MODM_FLAGS8(TccrA);
 
-		ClockCycles<SystemClock::Timer>::rep countsPerPeriod = period / tickPeriod;
+	enum class TccrB : uint8_t
+	{
+	};
+	MODM_FLAGS8(TccrB);
 
-		return CountType(countsToTop<dualSlope>(countsPerPeriod));
-	}
+	using WgmA_t = Configuration<TccrA_t, WaveformGenerationMode, Bit0 | Bit1>;
+	using WgmB_t = Configuration<TccrB_t, WaveformGenerationMode, Bit2, 1>;
+
+	using ClockSelect_t = Configuration<TccrB_t, ClockSource, 0b111>;
 };
 
 }  // namespace modm::platform

@@ -18,8 +18,6 @@
 #include <type_traits>
 #include <chrono>
 
-#include <modm/architecture/interface/register.hpp>
-#include <modm/math/utils/bit_constants.hpp>
 #include <modm/math/units.hpp>
 #include <modm/platform/gpio/base.hpp>
 #include <modm/platform/gpio/connector.hpp>
@@ -30,22 +28,6 @@ namespace modm::platform
 
 class Timer{{ id }} : public Timer8Bit
 {
-	enum class TccrA : uint8_t
-	{};
-	MODM_FLAGS8(TccrA);
-
-	enum class TccrB : uint8_t
-	{
-		FocA = 1 << FOC{{ id }}A,
-		FocB = 1 << FOC{{ id }}B,
-	};
-	MODM_FLAGS8(TccrB);
-
-	using WgmA_t = Configuration<TccrA_t, WaveformGenerationMode, Bit0 | Bit1>;
-	using WgmB_t = Configuration<TccrB_t, WaveformGenerationMode, Bit2, 1>;
-
-	using ClockSelect_t = Configuration<TccrB_t, ClockSource, 0b111>;
-
 public:
 	static inline void
 	initialize(WaveformGenerationMode wgm, ClockSource cs)
@@ -76,11 +58,11 @@ public:
 	{% for channel in output_channels %}
 	class OutputChannel{{ channel.id|upper }}
 	{
-		using OutputMode{{ channel.id|upper }}_t = Configuration<TccrA_t, OutputMode, 0b11, {{ channel.output_mode_shift }}>;
-
 		static inline void
 		setOutputMode(OutputMode mode)
 		{
+			using OutputMode{{ channel.id|upper }}_t = Configuration<TccrA_t, OutputMode, 0b11, {{ channel.output_mode_shift }}>;
+
 			TccrA_t tccrA{TCCR{{ id }}A};
 			OutputMode{{ channel.id|upper }}_t::set(tccrA, mode);
 			TCCR{{ id }}A = tccrA.value;
