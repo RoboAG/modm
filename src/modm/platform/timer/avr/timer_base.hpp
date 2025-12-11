@@ -40,37 +40,6 @@ struct Timer
 		PhaseAndFrequencyCorrectPwm,
 	};
 
-#ifdef __DOXYGEN__
-	// declarations for documentation purposes
-	// might be converted to a concept TimerInstance
-	using CountType = uint8_t;
-	static constexpr CountType max = 0xff;
-
-	using ExtendedCountType = uint32_t;
-
-	enum class ClockSource;
-
-	enum class WaveformGenerationMode;
-
-	static void initialize(WaveformGenerationMode, ClockSource);
-	static void setClockSource(ClockSource);
-	static void
-	stop();
-
-	class OutputChannel
-	{
-	public:
-		template<class Signal>
-		static void connect(OutputMode);
-
-		template<class Signal>
-		static void
-		disconnect();
-
-		static void setOutputCompareRegister(CountType);
-	};
-#endif  // __DOXYGEN__
-
 	template<bool dualSlope>
 	static constexpr auto
 	topToCounts(auto topValue)
