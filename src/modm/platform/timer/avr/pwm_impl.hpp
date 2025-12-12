@@ -12,6 +12,7 @@
 #ifndef MODM_AVR_TIMER_PWM_IMPL_HPP
 #define MODM_AVR_TIMER_PWM_IMPL_HPP
 
+#include <limits>
 #include <modm/math/utils/arithmetic_traits.hpp>
 
 #include "timer_base.hpp"
@@ -100,7 +101,8 @@ FixedTopPwm<TimerInstance, pwmMode, prescaler, topValue>::Channel<OutputChannel>
 {
 	using WideCountType = modm::WideType<typename TimerInstance::CountType>;
 	typename TimerInstance::CountType compareValue = static_cast<TimerInstance::CountType>(
-		((WideCountType(topValue) + 1) * WideCountType(dutyCycleFraction)) >> 8);
+		((WideCountType(topValue) + 1) * WideCountType(dutyCycleFraction)) >>
+		std::numeric_limits<typename TimerInstance::CountType>::digits);
 	OutputChannel::compareRegister = compareValue;
 }
 
@@ -178,7 +180,8 @@ VariableFrequencyPwm<TimerInstance, pwmMode, UsedOutputChannels...>::Channel<
 {
 	using WideCountType = modm::WideType<typename TimerInstance::CountType>;
 	typename TimerInstance::CountType compareValue = static_cast<TimerInstance::CountType>(
-		((WideCountType(newTop) + 1) * WideCountType(dutyCycleFraction)) >> 8);
+		((WideCountType(newTop) + 1) * WideCountType(dutyCycleFraction)) >>
+		std::numeric_limits<typename TimerInstance::CountType>::digits);
 	OutputChannel::compareRegister = compareValue;
 }
 
@@ -199,7 +202,8 @@ void
 VariableFrequencyPwm<TimerInstance, pwmMode, UsedOutputChannels...>::Channel<
 	OutputChannel>::setDutyCycle(percent_t dutyCycle)
 {
-	setDutyCycle(static_cast<TimerInstance::CountType>(dutyCycle * 255.f));
+	setDutyCycle(static_cast<TimerInstance::CountType>(
+		dutyCycle * float(std::numeric_limits<typename TimerInstance::CountType>::max())));
 }
 
 template<class TimerInstance, Timer::PwmMode pwmMode, class... UsedOutputChannels>
@@ -213,7 +217,8 @@ VariableFrequencyPwm<TimerInstance, pwmMode, UsedOutputChannels...>::Channel<
 
 	using WideCountType = modm::WideType<typename TimerInstance::CountType>;
 	compareValue = static_cast<TimerInstance::CountType>(
-		((WideCountType(compareValue) + 1) * WideCountType(dutyCycleFraction)) >> 8);
+		((WideCountType(compareValue) + 1) * WideCountType(dutyCycleFraction)) >>
+		std::numeric_limits<typename TimerInstance::CountType>::digits);
 	OutputChannel::compareRegister = compareValue;
 }
 

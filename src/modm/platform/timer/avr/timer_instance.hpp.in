@@ -12,10 +12,12 @@
 #ifndef MODM_AVR_TIMER_{{ id }}_HPP
 #define MODM_AVR_TIMER_{{ id }}_HPP
 
-{% if async %}
-#include "timer_8bit_async.hpp"
-{% else %}
+{% if type == "Timer8Bit" %}
 #include "timer_8bit.hpp"
+{% elif type == "Timer8BitAsync" %}
+#include "timer_8bit_async.hpp"
+{% elif type == "Timer16Bit" %}
+#include "timer_16bit.hpp"
 {% endif %}
 
 #include <avr/io.h>
@@ -26,7 +28,7 @@
 namespace modm::platform
 {
 
-class Timer{{ id }} : public {{ "Timer8BitAsync" if async else "Timer8Bit" }}
+class Timer{{ id }} : public {{ type }}
 {
 public:
 	static inline void

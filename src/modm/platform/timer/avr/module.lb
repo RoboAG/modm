@@ -10,10 +10,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 # -----------------------------------------------------------------------------
 
-class Instance8Bit(Module):
-	def __init__(self, instance, asynchronous):
+class TimerInstance(Module):
+	def __init__(self, instance, type):
 		self.instance = instance
-		self.asynchronous = asynchronous
+		self.type = type
 
 	def init(self, module):
 		module.name = str(self.instance)
@@ -26,13 +26,13 @@ class Instance8Bit(Module):
 
 		env.substitutions = {
 			"id" : self.instance,
-			"async" : self.asynchronous,
+			"type" : self.type,
 			"output_channels" : [
 				{ "id" : "A", "output_mode_shift" : 6 },
 				{ "id" : "B", "output_mode_shift" : 4 }
 			]
 		}
-		env.template("timer_8bit_instance.hpp.in", "timer_{}.hpp".format(self.instance))
+		env.template("timer_instance.hpp.in", "timer_{}.hpp".format(self.instance))
 
 def init(module):
 	module.name = ":platform:timer"
@@ -53,11 +53,15 @@ def prepare(module, options):
 
 	timers8bit = device.get_driver("tc:tc8")["instance"]
 	for instance in timers8bit:
-		module.add_submodule(Instance8Bit(instance, False))
+		module.add_submodule(TimerInstance(instance, "Timer8Bit"))
 
 	timers8bitasync = device.get_driver("tc:tc8_async")["instance"]
 	for instance in timers8bitasync:
-		module.add_submodule(Instance8Bit(instance, True))
+		module.add_submodule(TimerInstance(instance, "Timer8BitAsync"))
+
+	timers16bit = device.get_driver("tc:tc16")["instance"]
+	for instance in timers16bit:
+		module.add_submodule(TimerInstance(instance, "Timer16Bit"))
 
 	return True
 
@@ -70,5 +74,7 @@ def build(env):
 	env.copy("timer_8bit_impl.hpp")
 	env.copy("timer_8bit_async.hpp")
 	env.copy("timer_8bit_async_impl.hpp")
+	env.copy("timer_16bit.hpp")
+	env.copy("timer_16bit_impl.hpp")
 	env.copy("pwm.hpp")
 	env.copy("pwm_impl.hpp")
