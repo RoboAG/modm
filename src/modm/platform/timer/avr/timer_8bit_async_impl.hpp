@@ -57,7 +57,8 @@ Timer8BitAsync::selectPrescalerForMaxResolution(ClockCycles<SystemClock::Timer> 
 	constexpr ClockCycles<SystemClock::Timer>::rep maxCountsPerPeriod =
 		topToCounts<dualSlope>(ClockCycles<SystemClock::Timer>::rep(Timer8BitAsync::max));
 
-	return getPrescaler(period / maxCountsPerPeriod);
+	// FIXME find a proper way to round up
+	return getPrescaler(++(period / maxCountsPerPeriod));
 }
 
 template<bool dualSlope>
